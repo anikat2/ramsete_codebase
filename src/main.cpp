@@ -59,9 +59,9 @@ void competition_initialize() {}
  * from where it left off.
  */
 void autonomous() {
-	RamseteController ramsete(2.0,0.7);
-    lemlib::Pose endPose{60, 60, M_PI / 2}; 
-	ramsete.moveToPose(endPose);
+    RamseteController ramsete(2.0, 0.7);
+    lemlib::Pose endPose{60, 60, 90};
+    ramsete.moveToPose(endPose);
 
 }	
 /**

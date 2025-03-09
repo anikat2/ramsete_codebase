@@ -1,33 +1,59 @@
-#ifndef RAMSETE_CONTROLLER_H
-#define RAMSETE_CONTROLLER_H
+#ifndef RAMSETE_H
+#define RAMSETE_H
 
 #include "main.h"
 
+class QuinticHermiteSpline {
+public:
+    QuinticHermiteSpline(lemlib::Pose pose0, lemlib::Pose pose1,
+                        double velocity0, double velocity1);
+    
+    lemlib::Pose getPose(double t) const;
+    
+private:
+    lemlib::Pose pose0;
+    lemlib::Pose pose1;
+    double velocity0;
+    double velocity1;
+    
+    double h0(double t) const;
+    double h1(double t) const;
+    double h2(double t) const;
+    double h3(double t) const;
+    double h4(double t) const;
+    double h5(double t) const;
+};
+
 class RamseteController {
-    public:
-        struct output {
-            double linVel;
-            double angVel;
-        };
-    
-        RamseteController(double ib, double izeta) : b(ib), zeta(izeta) {}
-    
-        static void setTarget(double ix, double iy, double itheta, double ivel, double iomega);
-        output step(double ix, double iy, double itheta);
-        output step(double ix, double iy, double itheta);
-        output step(lemlib::Pose ipose);
-        void setGains(double ib, double izeta);
-        void moveToPose(lemlib::Pose targPose);
-            
-    private:
-        double b;
-        double zeta;
-        static double desX, desY, desT, velDes, omegaDes;
+public:
+    struct output {
+        double linVel;
+        double angVel;
     };
+
+    RamseteController(double b, double zeta);
     
-    double RamseteController::desX = 0;
-    double RamseteController::desY = 0;
-    double RamseteController::desT = 0;
-    double RamseteController::velDes = 0;
-    double RamseteController::omegaDes = 0;
-#endif    
+    void setTarget(double x, double y, double theta, double vel, double omega);
+    
+    output step(double x, double y, double theta);
+    output step(lemlib::Pose pose);
+    
+    void setGains(double b, double zeta);
+    
+    void setMotorVoltages(double linearVelocity, double angularVelocity);
+    
+    void moveToPose(lemlib::Pose targetPose);
+
+private:
+    double b;
+    double zeta;
+    
+    double desX;
+    double desY;
+    double desT;
+    double velDes;
+    double omegaDes;
+};
+
+
+#endif
