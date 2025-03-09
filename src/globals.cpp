@@ -1,7 +1,7 @@
 #include "main.h"
 
-pros::MotorGroup leftSide({1, 2, 3});
-pros::MotorGroup rightSide({4, 5, 6});
+pros::MotorGroup leftSide({4, 2, 3});
+pros::MotorGroup rightSide({11, 12, 13});
 
 lemlib::Drivetrain drivetrain(&leftSide, // left motor group
     &rightSide, // right motor group
@@ -10,7 +10,7 @@ lemlib::Drivetrain drivetrain(&leftSide, // left motor group
     450, // drivetrain rpm is 360
     2 // horizontal drift is 2 (for now)
 );
-pros::IMU imu(12);
+pros::IMU imu(20);
 
 lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel 1, set to null
     nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs

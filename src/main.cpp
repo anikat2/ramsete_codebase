@@ -60,7 +60,7 @@ void competition_initialize() {}
  */
 void autonomous() {
     RamseteController ramsete(2.0, 0.7);
-    lemlib::Pose endPose{60, 60, 90};
+    lemlib::Pose endPose{12, 12, 90};
     ramsete.moveToPose(endPose);
 
 }	
