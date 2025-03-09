@@ -41,8 +41,9 @@ RamseteController::output RamseteController::step(double ix, double iy, double i
 
   double k = 2 * zeta * sqrt(omegaDes * omegaDes + b * velDes * velDes);
   double vel = velDes * cos(et) + k * ex;
-  double omega = omegaDes + k * et + b * velDes * sin(et) * ey / (et != 0 ? et : 1e-6);
-
+  double sinc_et = (fabs(et) < 1e-3) ? (1 - et * et / 6) : sin(et) / et;
+  double omega = omegaDes + k * et + b * velDes * sinc_et * ey;
+  
   output out;
   out.linVel = vel;
   out.angVel = omega;
@@ -71,8 +72,12 @@ void RamseteController::setMotorVoltages(double linearVelocity, double angularVe
   double leftRpm = wheelRpm + angularComponent;
   double rightRpm = wheelRpm - angularComponent;
   
+  double maxRpm = 600; // Adjust based on motor specs
+  leftRpm = std::clamp(leftRpm, -maxRpm, maxRpm);
+  rightRpm = std::clamp(rightRpm, -maxRpm, maxRpm);
   leftSide.move_velocity(leftRpm);
   rightSide.move_velocity(rightRpm);
+
 }
 
 void RamseteController::moveToPose(lemlib::Pose targPose) {
@@ -88,11 +93,12 @@ void RamseteController::moveToPose(lemlib::Pose targPose) {
 
       lemlib::Pose targetPose = spline.getPose(t);
       
+      double nextT = std::min(t + 0.01, 1.0);
       double targetVel = std::hypot(
-        spline.getPose(t + 0.01).x - spline.getPose(t).x,
-        spline.getPose(t + 0.01).y - spline.getPose(t).y
-    ) / 0.01;
-    
+          spline.getPose(nextT).x - spline.getPose(t).x,
+          spline.getPose(nextT).y - spline.getPose(t).y
+      ) / 0.01;
+      
       double targetOmega = (spline.getPose(t + 0.01).theta - spline.getPose(t).theta) / 0.01;
     
       setTarget(targetPose.x, targetPose.y, targetPose.theta, targetVel, targetOmega);
