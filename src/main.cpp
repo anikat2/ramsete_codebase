@@ -62,14 +62,12 @@ void setMotorVoltages(double linearVelocity, double angularVelocity) {
     double leftVoltage = linearVelocity - angularVelocity * (drive.trackWidth / 2.0);
     double rightVoltage = linearVelocity + angularVelocity * (drive.trackWidth / 2.0);
 
-    double maxVoltage = std::max(std::abs(leftVoltage), std::abs(rightVoltage));
-    if (maxVoltage > 12.0) {
-        leftVoltage = leftVoltage * 12.0 / maxVoltage;
-        rightVoltage = rightVoltage * 12.0 / maxVoltage;
-    }
+    // Limit the voltages to +/- 12000 mV
+    leftVoltage = std::max(std::min(leftVoltage, 12000.0), -12000.0);
+    rightVoltage = std::max(std::min(rightVoltage, 12000.0), -12000.0);
 
-    leftSide.move(leftVoltage);
-    rightSide.move(rightVoltage);
+    leftSide.move_voltage(leftVoltage);
+    rightSide.move_voltage(rightVoltage);
 }
 void autonomous() {
     lemlib::Pose startPose{0, 0, 0};
