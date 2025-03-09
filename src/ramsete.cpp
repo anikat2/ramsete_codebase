@@ -88,8 +88,13 @@ void RamseteController::moveToPose(lemlib::Pose targPose) {
 
       lemlib::Pose targetPose = spline.getPose(t);
       
-      double targetVel = 100;
-      double targetOmega = 0;
+      double targetVel = std::hypot(
+        spline.getPose(t + 0.01).x - spline.getPose(t).x,
+        spline.getPose(t + 0.01).y - spline.getPose(t).y
+    ) / 0.01;
+    
+      double targetOmega = (spline.getPose(t + 0.01).theta - spline.getPose(t).theta) / 0.01;
+    
       setTarget(targetPose.x, targetPose.y, targetPose.theta, targetVel, targetOmega);
 
       lemlib::Pose currentPose = chassis.getPose(true);
