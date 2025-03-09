@@ -44,7 +44,7 @@ lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
 );
 
 // create the chassis
-lemlib::Chassis chassis(drive, // drivetrain settings
+lemlib::Chassis chassis(drivetrain, // drivetrain settings
 lateral_controller, // lateral PID settings
 angular_controller, // angular PID settings
 sensors // odometry sensors

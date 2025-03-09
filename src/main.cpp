@@ -58,41 +58,12 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void setMotorVoltages(double linearVelocity, double angularVelocity) {
-    double leftVel = (linearVelocity/(M_PI*drive.wheelDiameter)) + angularVelocity;
-	double rightVel = (linearVelocity/(M_PI*drive.wheelDiameter)) - angularVelocity;
-
-    leftSide.move_velocity(leftVel);
-    rightSide.move_velocity(rightVel);
-}
 void autonomous() {
-    lemlib::Pose startPose{0, 0, 0};
+	RamseteController ramsete(2.0,0.7);
     lemlib::Pose endPose{60, 60, M_PI / 2}; 
+	ramsete.moveToPose(endPose);
 
-    QuinticHermiteSpline spline(startPose, endPose, 200, 200); 
-
-    RamseteController ramsete(2.0, 0.7);
-
-    double totalTime = 5.0; 
-    double dt = 0.02;     
-    int steps = static_cast<int>(totalTime / dt); 
-
-    for (int i = 0; i <= steps; ++i) {
-        double t = static_cast<double>(i) / steps; 
-
-        lemlib::Pose targetPose = spline.getPose(t);
-
-        ramsete.setTarget(targetPose.x, targetPose.y, targetPose.theta, drive.rpm, drive.rpm);
-
-        lemlib::Pose currentPose = chassis.getPose(true);
-
-        auto output = ramsete.step(currentPose);
-
-        setMotorVoltages(output.linVel, output.angVel);
-
-        pros::delay(static_cast<int>(dt * 1000)); 
-}
-}
+}	
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
