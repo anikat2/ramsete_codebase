@@ -1,5 +1,6 @@
 #include "main.h"
 #include "ramsete.h"
+#include <fstream>
 
 RamseteController::RamseteController(double ib, double izeta)
     : b(ib), zeta(izeta) {}
@@ -83,7 +84,8 @@ void RamseteController::setMotorVoltages(double linearVelocity, double angularVe
 void RamseteController::moveToPose(lemlib::Pose targPose) {
   lemlib::Pose startPose = chassis.getPose();
   QuinticHermiteSpline spline(startPose, targPose, 200, 200);
-  
+
+
   double totalTime = 5.0;
   double dt = 0.02;
   int steps = static_cast<int>(totalTime / dt);
@@ -98,6 +100,7 @@ void RamseteController::moveToPose(lemlib::Pose targPose) {
           spline.getPose(nextT).x - spline.getPose(t).x,
           spline.getPose(nextT).y - spline.getPose(t).y
       ) / 0.01;
+      
       
       double targetOmega = (spline.getPose(t + 0.01).theta - spline.getPose(t).theta) / 0.01;
     
