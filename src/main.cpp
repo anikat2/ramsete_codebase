@@ -62,7 +62,6 @@ void setMotorVoltages(double linearVelocity, double angularVelocity) {
     double leftVoltage = linearVelocity - angularVelocity * (drive.trackWidth / 2.0);
     double rightVoltage = linearVelocity + angularVelocity * (drive.trackWidth / 2.0);
 
-    // Limit the voltages to +/- 12000 mV
     leftVoltage = std::max(std::min(leftVoltage, 12000.0), -12000.0);
     rightVoltage = std::max(std::min(rightVoltage, 12000.0), -12000.0);
 
