@@ -62,11 +62,11 @@ void competition_initialize() {}
  * from where it left off.
  */
 void autonomous() {
-    RamseteController ramsete(2.0, 0.7);
-    lemlib::Pose endPose{0, 2, 0};
+    RamseteController ramsete(2, 0.7);
+    lemlib::Pose endPose{0, 12, 270};
 	    // set position to x:0, y:0, heading:0
 	chassis.setPose(0, 0, 0);
-	
+	//chassis.turnToHeading(45,1000);
     ramsete.moveToPose(endPose);
 
 }	

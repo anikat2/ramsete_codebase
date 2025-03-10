@@ -43,11 +43,26 @@ RamseteController::output RamseteController::step(double ix, double iy, double i
   double k = 2 * zeta * sqrt(omegaDes * omegaDes + b * velDes * velDes);
   double vel = velDes * cos(et) + k * ex;
   double sinc_et = (fabs(et) < 1e-3) ? (1 - et * et / 6) : sin(et) / et;
-  double omega = omegaDes + k * et + b * velDes * sinc_et * ey;
-  
+  double omega = std::clamp(omegaDes + k * et + b * velDes * sinc_et * ey, -1.5, 1.5);
+
+  double tolerance = 0.05; 
   output out;
   out.linVel = vel;
   out.angVel = omega;
+double minVelocity = 0.02;
+
+double distanceToTarget = std::hypot(desX - ix, desY - iy);
+
+if (distanceToTarget < tolerance && fabs(vel) < minVelocity && fabs(omega) < 0.05) {
+    leftSide.move_velocity(0);
+    rightSide.move_velocity(0);
+
+    output out;
+    out.linVel = 0;
+    out.angVel = 0;
+    return out;
+}
+
   return out;
 }
 
@@ -64,7 +79,13 @@ void RamseteController::setGains(double ib, double izeta) {
 
 void RamseteController::setMotorVoltages(double linearVelocity, double angularVelocity) {
   double wheelDiameterMeters = drivetrain.wheelDiameter * 0.0254;
-  
+  if (fabs(linearVelocity) < 0.05) linearVelocity = 0;
+  if (fabs(angularVelocity) < 0.05) angularVelocity = 0;
+  static double prevVel = 0;  
+  double maxAccel = 0.05;     
+  linearVelocity = std::clamp(linearVelocity, prevVel - maxAccel, prevVel + maxAccel);
+  prevVel = linearVelocity;    
+
   double wheelRpm = (linearVelocity * 60.0) / (M_PI * wheelDiameterMeters);
   
   double trackWidthMeters = drivetrain.trackWidth * 0.0254;
@@ -73,9 +94,11 @@ void RamseteController::setMotorVoltages(double linearVelocity, double angularVe
   double leftRpm = wheelRpm + angularComponent;
   double rightRpm = wheelRpm - angularComponent;
   
-  double maxRpm = 600; // Adjust based on motor specs
+  double maxRpm = 600; 
   leftRpm = std::clamp(leftRpm, -maxRpm, maxRpm);
   rightRpm = std::clamp(rightRpm, -maxRpm, maxRpm);
+  pros::lcd::set_text(2,"left rpm" + std::to_string(leftRpm));
+  pros::lcd::set_text(2, "right rpm" + std::to_string(rightRpm));
   leftSide.move_velocity(leftRpm);
   rightSide.move_velocity(rightRpm);
 
@@ -83,38 +106,41 @@ void RamseteController::setMotorVoltages(double linearVelocity, double angularVe
 
 void RamseteController::moveToPose(lemlib::Pose targPose) {
   lemlib::Pose startPose = chassis.getPose();
-  QuinticHermiteSpline spline(startPose, targPose, 200, 200);
-
-
+  QuinticHermiteSpline spline(startPose, targPose, 15, 10);
   double totalTime = 5.0;
-  double dt = 0.02;
+  double dt = 0.01;
   int steps = static_cast<int>(totalTime / dt);
-
   for (int i = 0; i <= steps; ++i) {
-      double t = static_cast<double>(i) / steps;
-
-      lemlib::Pose targetPose = spline.getPose(t);
-      
-      double nextT = std::min(t + 0.01, 1.0);
-      double targetVel = std::hypot(
-          spline.getPose(nextT).x - spline.getPose(t).x,
-          spline.getPose(nextT).y - spline.getPose(t).y
-      ) / 0.01;
-      
-       
-      double targetOmega = (spline.getPose(t + 0.01).theta - spline.getPose(t).theta) / 0.01;
-    
-      setTarget(targetPose.x, targetPose.y, targetPose.theta, targetVel, targetOmega);
-
-      lemlib::Pose currentPose = chassis.getPose(true);
-
+    double t = static_cast<double>(i) / steps;
+    lemlib::Pose targetPose = spline.getPose(t);
+    double nextT = std::min(t + 0.01, 1.0);
+    double targetVel = std::hypot(
+      spline.getPose(nextT).x - spline.getPose(t).x,
+      spline.getPose(nextT).y - spline.getPose(t).y
+    ) / 0.01;
+    double targetOmega = (spline.getPose(t + 0.01).theta - spline.getPose(t).theta) / 0.01;
+    targetOmega = std::clamp(targetOmega, -1.5, 1.5);
+    setTarget(targetPose.x, targetPose.y, targetPose.theta, targetVel, targetOmega);
+    lemlib::Pose currentPose = chassis.getPose(true);
+    double distanceToTarget = std::hypot(
+      targPose.x - currentPose.x, 
+      targPose.y - currentPose.y
+    );
+    double angleDiff = std::abs(desT - (currentPose.theta * (M_PI / 180.0)));
+    while (angleDiff > M_PI) angleDiff = std::abs(angleDiff - 2*M_PI);
+    if (angleDiff < 0.15) { 
+      double decelFactor = angleDiff / 0.15;
+      targetOmega *= decelFactor;
+    }
+    if (distanceToTarget < 0.05 && angleDiff < 5) {
+        leftSide.move_velocity(0);
+        rightSide.move_velocity(0);
+        break;
+    }
       auto output = step(currentPose);
-
       setMotorVoltages(output.linVel, output.angVel);
-
       pros::delay(static_cast<int>(dt * 1000));
   }
-  
   leftSide.move_velocity(0);		
   rightSide.move_velocity(0);
 }
