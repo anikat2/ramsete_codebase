@@ -4,8 +4,13 @@
 pros::MotorGroup leftSide({-4, -2, -3});
 
 //pros::MotorGroup rightSide({11, 12, -13}); 
-pros::MotorGroup rightSide({11, 12, 13});
+pros::MotorGroup rightSide({15, 14, 13});
+pros::Rotation rotation(10);
+pros::Motor intake(20);
+pros::adi::DigitalOut clamp('A'); 
+pros::adi::DigitalOut doinker('B'); 
 
+pros::MotorGroup lb({11, 12});
 lemlib::Drivetrain drivetrain(&leftSide, // left motor group
     &rightSide, // right motor group
     10, // 10 inch track width
@@ -13,7 +18,8 @@ lemlib::Drivetrain drivetrain(&leftSide, // left motor group
     450, // drivetrain rpm is 360
     2 // horizontal drift is 2 (for now)
 );
-pros::IMU imu(20);
+pros::IMU imu(18);
+pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel 1, set to null
     nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs

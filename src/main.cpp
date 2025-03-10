@@ -63,11 +63,12 @@ void competition_initialize() {}
  */
 void autonomous() {
     RamseteController ramsete(2, 0.7);
-    lemlib::Pose endPose{0, 12, 270};
+    lemlib::Pose endPose{48, 48, 90};
 	    // set position to x:0, y:0, heading:0
 	chassis.setPose(0, 0, 0);
-	//chassis.turnToHeading(45,1000);
+	//chassis.turnToHeading(90,1000);
     ramsete.moveToPose(endPose);
+	
 
 }	
 /**
@@ -92,26 +93,158 @@ void autonomous() {
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
-void opcontrol() {
-	/** 
-	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::MotorGroup left_mg({1, -2, 3});    // Creates a motor group with forwards ports 1 & 3 and reversed port 2
-	pros::MotorGroup right_mg({-4, 5, -6});  // Creates a motor group with forwards port 5 and reversed ports 4 & 6
+const int numStates = 3;
+//make sure these are in centidegrees (1 degree = 100 centidegrees)
+int auton = 177;
+int zero = 0;
+int states[numStates] = {0, 30, 150};
+int currState = 0;
+int target = 0;
+
+void nextState() {
+    currState += 1;
+    if (currState == numStates) {
+        currState = 0;
+    }
+    target = states[currState];
+}
+
+void liftControl() {
+    double kp = 0.8;
+    double error = target - (rotation.get_position()/100.0);
+    double velocity = kp * error;
+    lb.move(velocity);
+} 
+ void drive() {
+        int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+        int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+        
+        
+        chassis.curvature(leftY , rightX);
+
+        // delay to save resources
+        pros::delay(25);
+    
+}
+	bool rollerOnL = false;  
+	bool buttonPressedL = false;
+	bool rollerOnR = false;  
+	bool buttonPressedR = false;
+	void roller(){
+
+		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !buttonPressedL) {
+				buttonPressedL = true; 
+
+				rollerOnL = !rollerOnL; 
+
+				if (rollerOnL) {
+					intake.move(-110); // Start roller at 100 RPM
+					
+					
+				} else {
+					intake.move(0); // Stop the roller
+					
+				} 
+		}
+
+		if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
+				buttonPressedL = false; 
+		}
 
 
-	while (true) {
-		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
-		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);  // Prints status of the emulated screen LCDs
 
-		// Arcade control scheme
-		int dir = master.get_analog(ANALOG_LEFT_Y);    // Gets amount forward/backward from left joystick
-		int turn = master.get_analog(ANALOG_RIGHT_X);  // Gets the turn left/right from right joystick
-		left_mg.move(dir - turn);                      // Sets left motor voltage
-		right_mg.move(dir + turn);                     // Sets right motor voltage
-		pros::delay(20);                               // Run for 20 ms then update
+		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !buttonPressedR) {
+				buttonPressedR = true; 
+
+				rollerOnR = !rollerOnR; 
+
+				if (rollerOnR) {
+					intake.move(120); // Start roller at 100 RPM
+					
+					
+				} else {
+					intake.move(0); // Stop the roller
+					
+				} 
+		}
+
+			// Reset the buttonPressed flag when L1 is released
+		if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+				buttonPressedR = false; // Ready to detect next press
+		}
+		
+		
+
 	}
-	*/
+void toggleClamp() {
+    static bool pistonState = true;  // Tracks the state of the piston
+    static bool lastButtonState = false;  // Tracks the last state of the L2 button
+
+    bool currentButtonState = controller.get_digital(pros::E_CONTROLLER_DIGITAL_A);
+
+    // Toggle the piston state on a rising edge (button press)
+    if (currentButtonState && !lastButtonState) {
+        pistonState = !pistonState;  // Flip the state
+        clamp.set_value(pistonState);  // Update the piston
+        
+    }
+
+    lastButtonState = currentButtonState;  // Update the last button state
+}
+void toggleDoink() {
+    static bool pistonState = true;  // Tracks the state of the piston
+    static bool lastButtonState = false;  // Tracks the last state of the L2 button
+
+    bool currentButtonState = controller.get_digital(pros::E_CONTROLLER_DIGITAL_B);
+
+    // Toggle the piston state on a rising edge (button press)
+    if (currentButtonState && !lastButtonState) {
+        pistonState = !pistonState;  // Flip the state
+        clamp.set_value(pistonState);  // Update the piston
+        
+    }
+
+    lastButtonState = currentButtonState;  // Update the last button state
+}
+void opcontrol() {
+	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
+	rotation.reset_position();
+	rotation.set_position(0);
+	pros::Task liftControlTask([&]{
+        while (true) {
+            liftControl();
+            pros::delay(10);
+        }
+    });
+	
+	while (true) {
+		pros::lcd::print(0, "OpControl Running");
+		if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
+			nextState();
+		}
+		//controller.print(1, 0, "Arm Pos: %.2f", arm.get_position());
+		controller.print(0, 0, "Rotation: %04d", (int)rotation.get_position());
+		
+		drive();
+		roller();
+		toggleClamp();
+		toggleDoink();
+	}
+	
+	
+
+	
+	
+	pros::Task controllerTask([&]{
+		while (true) {
+			lemlib::Pose pose = chassis.getPose();
+			//controller.print(0 ,0, "Angle: %f",  pose.theta);
+			controller.print(1, 0, "Y: %f", pose.y);
+			controller.print(2, 0, "X: %f", pose.x);
+			controller.print(0, 0, "Rotation: %d", rotation.get_position());
+		}
+	});
+
 //for testing purposes
-	autonomous();
+//autonomous();
 }

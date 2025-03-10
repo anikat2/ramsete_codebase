@@ -113,8 +113,8 @@ void RamseteController::moveToPose(lemlib::Pose targPose) {
   
   SigmoidMotionProfile profile(
     distanceToTarget, 
-    15.0,             // max velocity 
-    10.0,             // max acceleration 
+    30.0,             // max velocity 
+    30.0,             // max acceleration 
     20.0              // jerk 
   );
   
