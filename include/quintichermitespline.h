@@ -3,16 +3,24 @@
 
 #include "main.h"
 
+struct SplineOutput {
+    double linearVelocity;
+    double angularVelocity;
+};
+
 class QuinticHermiteSpline {
 public:
     QuinticHermiteSpline(lemlib::Pose pose0, lemlib::Pose pose1,
-                         double velocity0 = 0.0, double velocity1 = 0.0);
+                         double velocity0, double velocity1);
 
     lemlib::Pose getPose(double t) const;
+    SplineOutput getVelocityOutput(double t) const;
 
 private:
-    lemlib::Pose pose0, pose1; 
-    double velocity0, velocity1; 
+    lemlib::Pose pose0;
+    lemlib::Pose pose1;
+    double velocity0;
+    double velocity1;
 
     double h0(double t) const;
     double h1(double t) const;
@@ -22,4 +30,4 @@ private:
     double h5(double t) const;
 };
 
-#endif
+#endif 

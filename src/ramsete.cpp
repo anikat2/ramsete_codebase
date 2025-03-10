@@ -49,19 +49,19 @@ RamseteController::output RamseteController::step(double ix, double iy, double i
   output out;
   out.linVel = vel;
   out.angVel = omega;
-double minVelocity = 0.02;
+  double minVelocity = 0.02;
 
-double distanceToTarget = std::hypot(desX - ix, desY - iy);
+  double distanceToTarget = std::hypot(desX - ix, desY - iy);
 
-if (distanceToTarget < tolerance && fabs(vel) < minVelocity && fabs(omega) < 0.05) {
-    leftSide.move_velocity(0);
-    rightSide.move_velocity(0);
+  if (distanceToTarget < tolerance && fabs(vel) < minVelocity && fabs(omega) < 0.05) {
+      leftSide.move_velocity(0);
+      rightSide.move_velocity(0);
 
-    output out;
-    out.linVel = 0;
-    out.angVel = 0;
-    return out;
-}
+      output out;
+      out.linVel = 0;
+      out.angVel = 0;
+      return out;
+  }
 
   return out;
 }
@@ -101,7 +101,6 @@ void RamseteController::setMotorVoltages(double linearVelocity, double angularVe
   pros::lcd::set_text(2, "right rpm" + std::to_string(rightRpm));
   leftSide.move_velocity(leftRpm);
   rightSide.move_velocity(rightRpm);
-
 }
 
 void RamseteController::moveToPose(lemlib::Pose targPose) {
@@ -113,13 +112,14 @@ void RamseteController::moveToPose(lemlib::Pose targPose) {
   for (int i = 0; i <= steps; ++i) {
     double t = static_cast<double>(i) / steps;
     lemlib::Pose targetPose = spline.getPose(t);
-    double nextT = std::min(t + 0.01, 1.0);
-    double targetVel = std::hypot(
-      spline.getPose(nextT).x - spline.getPose(t).x,
-      spline.getPose(nextT).y - spline.getPose(t).y
-    ) / 0.01;
-    double targetOmega = (spline.getPose(t + 0.01).theta - spline.getPose(t).theta) / 0.01;
+    
+    SplineOutput velocityOutput = spline.getVelocityOutput(t);
+    double targetVel = velocityOutput.linearVelocity;
+    double targetOmega = velocityOutput.angularVelocity;
+    
+    targetVel *= 0.8; 
     targetOmega = std::clamp(targetOmega, -1.5, 1.5);
+    
     setTarget(targetPose.x, targetPose.y, targetPose.theta, targetVel, targetOmega);
     lemlib::Pose currentPose = chassis.getPose(true);
     double distanceToTarget = std::hypot(
@@ -128,19 +128,23 @@ void RamseteController::moveToPose(lemlib::Pose targPose) {
     );
     double angleDiff = std::abs(desT - (currentPose.theta * (M_PI / 180.0)));
     while (angleDiff > M_PI) angleDiff = std::abs(angleDiff - 2*M_PI);
+    
     if (angleDiff < 0.15) { 
       double decelFactor = angleDiff / 0.15;
       targetOmega *= decelFactor;
     }
+    
     if (distanceToTarget < 0.05 && angleDiff < 5) {
         leftSide.move_velocity(0);
         rightSide.move_velocity(0);
         break;
     }
-      auto output = step(currentPose);
-      setMotorVoltages(output.linVel, output.angVel);
-      pros::delay(static_cast<int>(dt * 1000));
+    
+    auto output = step(currentPose);
+    setMotorVoltages(output.linVel, output.angVel);
+    pros::delay(static_cast<int>(dt * 1000));
   }
+  
   leftSide.move_velocity(0);		
   rightSide.move_velocity(0);
 }
