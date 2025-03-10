@@ -38,6 +38,7 @@
 #include "lemlib/api.hpp"
 #include "globals.h"
 #include "quintichermitespline.h"
+#include "motion_profile_sigmoid.hpp"
 #include "ramsete.h"
 /**
  * You should add more #includes here

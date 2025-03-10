@@ -105,46 +105,82 @@ void RamseteController::setMotorVoltages(double linearVelocity, double angularVe
 
 void RamseteController::moveToPose(lemlib::Pose targPose) {
   lemlib::Pose startPose = chassis.getPose();
-  QuinticHermiteSpline spline(startPose, targPose, 15, 10);
-  double totalTime = 5.0;
+  
+  double distanceToTarget = std::hypot(
+    targPose.x - startPose.x, 
+    targPose.y - startPose.y
+  );
+  
+  SigmoidMotionProfile profile(
+    distanceToTarget, 
+    15.0,             // max velocity 
+    10.0,             // max acceleration 
+    20.0              // jerk 
+  );
+  
+  double totalTime = profile.get_time_end();
   double dt = 0.01;
-  int steps = static_cast<int>(totalTime / dt);
-  for (int i = 0; i <= steps; ++i) {
-    double t = static_cast<double>(i) / steps;
-    lemlib::Pose targetPose = spline.getPose(t);
+  
+  double startHeading = startPose.theta * (M_PI / 180.0);
+  double targetHeading = targPose.theta * (M_PI / 180.0);
+  double headingDiff = targetHeading - startHeading;
+  
+  while (headingDiff > M_PI) headingDiff -= 2 * M_PI;
+  while (headingDiff < -M_PI) headingDiff += 2 * M_PI;
+  
+  for (double t = 0; t <= totalTime; t += dt) {
+    double currentDistance = profile.get_time_distance(t);
+    double currentVelocity = profile.get_time_velocity(t);
     
-    SplineOutput velocityOutput = spline.getVelocityOutput(t);
-    double targetVel = velocityOutput.linearVelocity;
-    double targetOmega = velocityOutput.angularVelocity;
+    double progress = (distanceToTarget > 0) ? currentDistance / distanceToTarget : 1.0;
     
-    targetVel *= 0.8; 
-    targetOmega = std::clamp(targetOmega, -1.5, 1.5);
+    double currentX = startPose.x + progress * (targPose.x - startPose.x);
+    double currentY = startPose.y + progress * (targPose.y - startPose.y);
     
-    setTarget(targetPose.x, targetPose.y, targetPose.theta, targetVel, targetOmega);
+    double currentHeading = startHeading + progress * headingDiff;
+    double currentHeadingDeg = currentHeading * (180.0 / M_PI);
+    
+    double dx = targPose.x - currentX;
+    double dy = targPose.y - currentY;
+    double targetAngle = std::atan2(dy, dx);
+    
+    double headingError = targetHeading - currentHeading;
+    while (headingError > M_PI) headingError -= 2 * M_PI;
+    while (headingError < -M_PI) headingError += 2 * M_PI;
+    
+    double targetAngularVelocity = headingError / dt;
+    targetAngularVelocity = std::clamp(targetAngularVelocity, -1.5, 1.5);
+    
+    setTarget(
+      currentX,
+      currentY,
+      currentHeadingDeg,
+      currentVelocity,
+      targetAngularVelocity
+    );
+    
     lemlib::Pose currentPose = chassis.getPose(true);
-    double distanceToTarget = std::hypot(
+    
+    double distanceRemaining = std::hypot(
       targPose.x - currentPose.x, 
       targPose.y - currentPose.y
     );
-    double angleDiff = std::abs(desT - (currentPose.theta * (M_PI / 180.0)));
-    while (angleDiff > M_PI) angleDiff = std::abs(angleDiff - 2*M_PI);
     
-    if (angleDiff < 0.15) { 
-      double decelFactor = angleDiff / 0.15;
-      targetOmega *= decelFactor;
-    }
+    double angleDiff = std::abs(targPose.theta - currentPose.theta);
+    while (angleDiff > 180) angleDiff = std::abs(angleDiff - 360);
     
-    if (distanceToTarget < 0.05 && angleDiff < 5) {
-        leftSide.move_velocity(0);
-        rightSide.move_velocity(0);
-        break;
+    if (distanceRemaining < 0.05 && angleDiff < 5) {
+      leftSide.move_velocity(0);
+      rightSide.move_velocity(0);
+      break;
     }
     
     auto output = step(currentPose);
     setMotorVoltages(output.linVel, output.angVel);
+    
     pros::delay(static_cast<int>(dt * 1000));
   }
   
-  leftSide.move_velocity(0);		
+  leftSide.move_velocity(0);
   rightSide.move_velocity(0);
 }
