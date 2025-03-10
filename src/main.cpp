@@ -25,7 +25,10 @@ void on_center_button() {
 void initialize() {
 	pros::lcd::initialize();
 	pros::lcd::set_text(1, "Hello PROS User!");
-
+    leftSide.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD); // Use COAST for smoother stops
+    rightSide.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	chassis.calibrate();
+	pros::delay(1000);
 	pros::lcd::register_btn1_cb(on_center_button);
 }
 
@@ -60,12 +63,24 @@ void competition_initialize() {}
  */
 void autonomous() {
     RamseteController ramsete(2.0, 0.7);
-    lemlib::Pose endPose{12, 12, 90};
+    lemlib::Pose endPose{0, 2, 0};
+	    // set position to x:0, y:0, heading:0
+	chassis.setPose(0, 0, 0);
+	
     ramsete.moveToPose(endPose);
 
 }	
 /**
- * Runs the operator control code. This function will be started in its own task
+ * Runs the operator control code. lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
+                                              0, // integral gain (kI)
+                                              10, // derivative gain (kD)
+                                              0, // anti windup
+                                              0, // small error range, in inches
+                                              0, // small error range timeout, in milliseconds
+                                              0, // large error range, in inches
+                                              0, // large error range timeout, in milliseconds
+                                              0 // maximum acceleration (slew)
+);This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
  * the Field Management System or the VEX Competition Switch in the operator
  * control mode.

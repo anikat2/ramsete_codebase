@@ -1,6 +1,9 @@
 #include "main.h"
 
-pros::MotorGroup leftSide({4, 2, 3});
+//pros::MotorGroup leftSide({4, 2, -3});
+pros::MotorGroup leftSide({-4, -2, -3});
+
+//pros::MotorGroup rightSide({11, 12, -13}); 
 pros::MotorGroup rightSide({11, 12, 13});
 
 lemlib::Drivetrain drivetrain(&leftSide, // left motor group
@@ -19,10 +22,9 @@ lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel 1, set to null
     &imu // inertial sensor
 );
 
-// lateral PID controller
-lemlib::ControllerSettings lateral_controller(11, // proportional gain (kP)
+lemlib::ControllerSettings lateral_controller(8.4, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              9.2, // derivative gain (kD)
+                                              15, // derivative gain (kD)
                                               0, // anti windup
                                               0, // small error range, in inches
                                               0, // small error range timeout, in milliseconds
@@ -43,7 +45,6 @@ lemlib::ControllerSettings angular_controller(3, // proportional gain (kP)
                                               0 // maximum acceleration (slew)
 );
 
-// create the chassis
 lemlib::Chassis chassis(drivetrain, // drivetrain settings
 lateral_controller, // lateral PID settings
 angular_controller, // angular PID settings

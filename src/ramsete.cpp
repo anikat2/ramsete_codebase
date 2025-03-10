@@ -101,7 +101,7 @@ void RamseteController::moveToPose(lemlib::Pose targPose) {
           spline.getPose(nextT).y - spline.getPose(t).y
       ) / 0.01;
       
-      
+       
       double targetOmega = (spline.getPose(t + 0.01).theta - spline.getPose(t).theta) / 0.01;
     
       setTarget(targetPose.x, targetPose.y, targetPose.theta, targetVel, targetOmega);
@@ -115,6 +115,6 @@ void RamseteController::moveToPose(lemlib::Pose targPose) {
       pros::delay(static_cast<int>(dt * 1000));
   }
   
-  leftSide.move_velocity(0);
+  leftSide.move_velocity(0);		
   rightSide.move_velocity(0);
 }
