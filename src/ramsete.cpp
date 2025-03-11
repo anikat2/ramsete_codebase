@@ -160,7 +160,9 @@ void RamseteController::moveToPose(lemlib::Pose targPose) {
     );
     
     lemlib::Pose currentPose = chassis.getPose(true);
-    
+    lemlib::Pose tempPose = chassis.getPose();
+    controller.print(2, 0, "X:%d Y:%d Θ:%d", (int)tempPose.x, (int)tempPose.y, (int)tempPose.theta);
+
     double distanceRemaining = std::hypot(
       targPose.x - currentPose.x, 
       targPose.y - currentPose.y

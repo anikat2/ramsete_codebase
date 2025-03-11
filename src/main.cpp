@@ -64,7 +64,7 @@ void autonomous() {
 	}
 		*/
 	RamseteController ramsete(2, 0.7);
-	lemlib::Pose endPose = {48, 48, 90};
+	lemlib::Pose endPose = {48, 48, 0};
 	ramsete.moveToPose(endPose);
 
 }
@@ -95,11 +95,11 @@ void nextforcustom(int targetAngle) {
 	target = targetAngle;
 }
 void opcontrol() {
-	
 	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
 	controller.clear();
 	rotation.reset_position();
 	rotation.set_position(0);
+	
 	pros::Task liftControlTask([&]{
         while (true) {
             liftControl();
@@ -107,6 +107,7 @@ void opcontrol() {
         }
 		
     });
+	
 	pros::Task controllerTask([&]{
 		while (true) {
 			lemlib::Pose pose = chassis.getPose();
@@ -157,4 +158,6 @@ void opcontrol() {
 	}
 	
 	//chassis.turnToHeading(90, 400);
+	//autonomous();
+	//chassis.moveToPoint(0,24,3000);
 }
