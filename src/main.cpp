@@ -44,6 +44,7 @@ void competition_initialize() {
 void autonomous() {
 	// Run the selected autonomous function
 	//selector.run_auton();
+	/*
 	int selectedAuton = 1;
 	
 	if(selectedAuton == 1){
@@ -61,6 +62,10 @@ void autonomous() {
 	else{
 		skills();
 	}
+		*/
+	RamseteController ramsete(2, 0.7);
+	lemlib::Pose endPose = {48, 48, 90};
+	ramsete.moveToPose(endPose);
 
 }
 const int numStates = 3;
@@ -73,19 +78,16 @@ extern int target = 0;
 
 void nextState() {
     currState += 1;
-    if (currState == numStates) {
+    if (currState == numStates) 
         currState = 0;
-    }
     target = states[currState];
 }
 
 void liftControl() {
     double kp = 0.8;
     double error = target - (rotation.get_position()/100.0);
-	if(target == states[2]){
-		
+	if(target == states[2])
 		intake.move(0);
-	}
     double velocity = kp * error;
     lb.move(velocity);
 } 
@@ -155,7 +157,4 @@ void opcontrol() {
 	}
 	
 	//chassis.turnToHeading(90, 400);
-	
-
-	
 }
