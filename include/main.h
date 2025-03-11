@@ -40,6 +40,8 @@
 #include "quintichermitespline.h"
 #include "motion_profile_sigmoid.hpp"
 #include "ramsete.h"
+#include "auton.h"
+#include "driver.h"
 /**
  * You should add more #includes here
  */
