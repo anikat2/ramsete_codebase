@@ -38,6 +38,7 @@
 #include "lemlib/api.hpp"
 #include "globals.h"
 #include "quintichermitespline.h"
+#include "motion_profile_trapezoidal.hpp"
 #include "motion_profile_sigmoid.hpp"
 #include "ramsete.h"
 #include "auton.h"

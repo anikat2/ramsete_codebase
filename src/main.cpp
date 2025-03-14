@@ -26,7 +26,7 @@ void initialize() {
 		pros::lcd::print(0, "X: %.2f", x_pos);
 		pros::lcd::print(1, "Y: %.2f", y_pos);
 		pros::lcd::print(2, "Rotation Pos: %i", rotation.get_position());
-    
+		controller.print(2, 0, "Heading: %.2f", imu.get_heading());
     	pros::delay(1000);
     }
 	});
@@ -63,9 +63,33 @@ void autonomous() {
 		skills();
 	}
 		*/
-	RamseteController ramsete(2, 0.7);
-	lemlib::Pose endPose = {48, 48, 0};
+	//divide desired angle by 2
+	//multiply desired x by 2
+	/*
+	RamseteController ramsete(2, 0.4);
+	lemlib::Pose endPose = {48,24,45};
+	chassis.setPose(0,0,0);
 	ramsete.moveToPose(endPose);
+	pros::delay(1000);	
+	chassis.setPose(0,0,0);
+	*/
+	lb.move(127);
+	pros::delay(500);
+	lb.move(0);
+	pros::delay(100);
+	lb.move(-127);
+	pros::delay(500);
+	lb.move(0);
+	//chassis.turnToHeading(-275, 3000);
+	chassis.moveToPoint(0, -8, 500, {.forwards = false, .maxSpeed = 50}, false);
+	chassis.turnToHeading(88.5, 500);
+	chassis.setPose(0,0,0);
+	chassis.moveToPoint(-24, 0, 1200, {.forwards = false, .maxSpeed = 50}, false);
+	clamp.set_value(true);
+
+	pros::delay(1000);
+	clamp.set_value(false);
+
 
 }
 const int numStates = 3;
@@ -95,6 +119,7 @@ void nextforcustom(int targetAngle) {
 	target = targetAngle;
 }
 void opcontrol() {
+	/** 
 	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
 	controller.clear();
 	rotation.reset_position();
@@ -156,8 +181,9 @@ void opcontrol() {
 		togglePiston();
 
 	}
-	
+	*/
 	//chassis.turnToHeading(90, 400);
-	//autonomous();
+	autonomous();
+	//drive();
 	//chassis.moveToPoint(0,24,3000);
-}
+}\

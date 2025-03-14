@@ -8,6 +8,8 @@ RamseteController::RamseteController(double ib, double izeta)
 void RamseteController::setTarget(double ix, double iy, double itheta,
                                   double ivel, double iomega) {
   double convFact = 0.0254;
+  ix=ix;
+  iy=iy;
   desX = ix * convFact;
   desY = iy * convFact;
 
@@ -82,7 +84,7 @@ void RamseteController::setMotorVoltages(double linearVelocity, double angularVe
   if (fabs(linearVelocity) < 0.05) linearVelocity = 0;
   if (fabs(angularVelocity) < 0.05) angularVelocity = 0;
   static double prevVel = 0;  
-  double maxAccel = 0.05;     
+  double maxAccel = 0.1;     
   linearVelocity = std::clamp(linearVelocity, prevVel - maxAccel, prevVel + maxAccel);
   prevVel = linearVelocity;    
 
@@ -105,84 +107,80 @@ void RamseteController::setMotorVoltages(double linearVelocity, double angularVe
 
 void RamseteController::moveToPose(lemlib::Pose targPose) {
   lemlib::Pose startPose = chassis.getPose();
-  
+
   double distanceToTarget = std::hypot(
-    targPose.x - startPose.x, 
-    targPose.y - startPose.y
+      targPose.x - startPose.x, 
+      targPose.y - startPose.y
   );
-  
+
+  // 🔥 Use Trapezoidal Motion Profile Instead of Sigmoid
   SigmoidMotionProfile profile(
-    distanceToTarget, 
-    30.0,             // max velocity 
-    30.0,             // max acceleration 
-    20.0              // jerk 
+      distanceToTarget, 
+      30.0,   // Max velocity
+      30.0,
+      20.0   // Acceleration
   );
-  
+
   double totalTime = profile.get_time_end();
-  double dt = 0.01;
-  
+  double dt = 0.01;  // 10ms update interval
+
   double startHeading = startPose.theta * (M_PI / 180.0);
   double targetHeading = targPose.theta * (M_PI / 180.0);
   double headingDiff = targetHeading - startHeading;
-  
+
+  // Normalize heading difference
   while (headingDiff > M_PI) headingDiff -= 2 * M_PI;
   while (headingDiff < -M_PI) headingDiff += 2 * M_PI;
-  
-  for (double t = 0; t <= totalTime; t += dt) {
-    double currentDistance = profile.get_time_distance(t);
-    double currentVelocity = profile.get_time_velocity(t);
-    
-    double progress = (distanceToTarget > 0) ? currentDistance / distanceToTarget : 1.0;
-    
-    double currentX = startPose.x + progress * (targPose.x - startPose.x);
-    double currentY = startPose.y + progress * (targPose.y - startPose.y);
-    
-    double currentHeading = startHeading + progress * headingDiff;
-    double currentHeadingDeg = currentHeading * (180.0 / M_PI);
-    
-    double dx = targPose.x - currentX;
-    double dy = targPose.y - currentY;
-    double targetAngle = std::atan2(dy, dx);
-    
-    double headingError = targetHeading - currentHeading;
-    while (headingError > M_PI) headingError -= 2 * M_PI;
-    while (headingError < -M_PI) headingError += 2 * M_PI;
-    
-    double targetAngularVelocity = headingError / dt;
-    targetAngularVelocity = std::clamp(targetAngularVelocity, -1.5, 1.5);
-    
-    setTarget(
-      currentX,
-      currentY,
-      currentHeadingDeg,
-      currentVelocity,
-      targetAngularVelocity
-    );
-    
-    lemlib::Pose currentPose = chassis.getPose(true);
-    lemlib::Pose tempPose = chassis.getPose();
-    controller.print(2, 0, "X:%d Y:%d Θ:%d", (int)tempPose.x, (int)tempPose.y, (int)tempPose.theta);
 
-    double distanceRemaining = std::hypot(
-      targPose.x - currentPose.x, 
-      targPose.y - currentPose.y
-    );
-    
-    double angleDiff = std::abs(targPose.theta - currentPose.theta);
-    while (angleDiff > 180) angleDiff = std::abs(angleDiff - 360);
-    
-    if (distanceRemaining < 0.05 && angleDiff < 5) {
-      leftSide.move_velocity(0);
-      rightSide.move_velocity(0);
-      break;
-    }
-    
-    auto output = step(currentPose);
-    setMotorVoltages(output.linVel, output.angVel);
-    
-    pros::delay(static_cast<int>(dt * 1000));
+  for (double t = 0; t <= totalTime; t += dt) {
+      double currentDistance = profile.get_time_distance(t);
+      double currentVelocity = profile.get_time_velocity(t);
+
+      double progress = (distanceToTarget > 0) ? currentDistance / distanceToTarget : 1.0;
+
+      // 🔥 Gradually adjust heading using interpolation
+      double currentHeading = startHeading + progress * headingDiff;
+      double currentHeadingDeg = currentHeading * (180.0 / M_PI);
+
+      double currentX = startPose.x + progress * (targPose.x - startPose.x);
+      double currentY = startPose.y + progress * (targPose.y - startPose.y);
+
+      // 🔥 Smoothly interpolate angular velocity based on heading error
+      double headingError = targetHeading - currentHeading;
+      while (headingError > M_PI) headingError -= 2 * M_PI;
+      while (headingError < -M_PI) headingError += 2 * M_PI;
+
+      double targetAngularVelocity = headingError / dt;
+      targetAngularVelocity = std::clamp(targetAngularVelocity, -1.5, 1.5);
+
+      setTarget(
+          currentX,
+          currentY,
+          currentHeadingDeg,
+          currentVelocity,
+          targetAngularVelocity // 🔥 Now robot can turn gradually
+      );
+
+      lemlib::Pose currentPose = chassis.getPose(true);
+
+      double distanceRemaining = std::hypot(
+          targPose.x - currentPose.x, 
+          targPose.y - currentPose.y
+      );
+
+      // Stop when close enough to target
+      if (distanceRemaining < 0.05 && std::abs(headingError) < 2.0) {
+          leftSide.move_velocity(0);
+          rightSide.move_velocity(0);
+          break;
+      }
+
+      auto output = step(currentPose);
+      setMotorVoltages(output.linVel, output.angVel);
+
+      pros::delay(static_cast<int>(dt * 1000));
   }
-  
+
   leftSide.move_velocity(0);
   rightSide.move_velocity(0);
 }

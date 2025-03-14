@@ -4,7 +4,7 @@
 pros::MotorGroup leftSide({-4, -2, -3});
 
 //pros::MotorGroup rightSide({11, 12, -13}); 
-pros::MotorGroup rightSide({15, 14, 13});
+pros::MotorGroup rightSide({15, 14, 16});
 pros::Rotation rotation(16);
 pros::Motor intake(20);
 pros::adi::DigitalOut clamp('A'); 
