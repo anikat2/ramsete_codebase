@@ -29,7 +29,7 @@ void roller(){
             rollerOnL = !rollerOnL; 
 
             if (rollerOnL) {
-                intake.move(-110); // Start roller at 100 RPM
+                intake.move(-100); // Start roller at 100 RPM
                 
                 
             } else {

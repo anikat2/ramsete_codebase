@@ -76,18 +76,36 @@ void autonomous() {
 	lb.move(127);
 	pros::delay(500);
 	lb.move(0);
-	pros::delay(100);
+	pros::delay(200);
 	lb.move(-127);
 	pros::delay(500);
 	lb.move(0);
 	//chassis.turnToHeading(-275, 3000);
-	chassis.moveToPoint(0, -8, 500, {.forwards = false, .maxSpeed = 50}, false);
+	chassis.moveToPoint(0, -8, 500, {.forwards = false, .maxSpeed = 70}, false);
 	chassis.turnToHeading(88.5, 500);
 	chassis.setPose(0,0,0);
+	intake.move(115);
 	chassis.moveToPoint(-24, 0, 1200, {.forwards = false, .maxSpeed = 50}, false);
 	clamp.set_value(true);
+	chassis.setPose(0,0,0);
+	chassis.turnToHeading(88.5, 500);
+	chassis.setPose(0,0,0);
+	chassis.moveToPoint(24, 0, 1000, {.forwards = true, .maxSpeed = 70}, false);
+	pros::delay(500);
+	chassis.setPose(0,0,0);
+	chassis.turnToHeading(65, 500);
+	chassis.setPose(0,0,0);
+	chassis.moveToPoint(44, 0, 2000, {.forwards=true, .maxSpeed=70}, false);
+	chassis.setPose(0,0,0);
+	chassis.turnToHeading(-70, 500);
+	chassis.setPose(0,0,0);
+	moveArm(74);
+	chassis.moveToPoint(-24, 0, 1200, {.maxSpeed=70}, false);
+	chassis.setPose(0,0,0);
+	
 
-	pros::delay(1000);
+	pros::delay(5000);
+	intake.move(0);
 	clamp.set_value(false);
 
 
@@ -96,7 +114,7 @@ const int numStates = 3;
 //make sure these are in centidegrees (1 degree = 100 centidegrees)
 int auton = 177;
 int zero = 0;
-int states[numStates] = {0, 32, 160};
+int states[numStates] = {0, -32, 160};
 extern int currState = 0;
 extern int target = 0;
 
@@ -119,12 +137,12 @@ void nextforcustom(int targetAngle) {
 	target = targetAngle;
 }
 void opcontrol() {
-	/** 
+	/**
 	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
 	controller.clear();
 	rotation.reset_position();
 	rotation.set_position(0);
-	
+	/*
 	pros::Task liftControlTask([&]{
         while (true) {
             liftControl();
@@ -152,12 +170,12 @@ void opcontrol() {
 	while (true) {
 		pros::lcd::print(0, "OpControl Running");
 		if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
-			liftControlTask.resume();
+			//liftControlTask.resume();
 			custom.suspend();
 			nextState();
 		}
 		if(controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)){
-			liftControlTask.suspend();
+			//liftControlTask.suspend();
 			custom.resume();
 			intake.move(-5);
 			pros::delay(200);
@@ -166,7 +184,7 @@ void opcontrol() {
 
 		}
 		if(controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)){
-			liftControlTask.suspend();
+			//liftControlTask.suspend();
 			custom.resume();
 			intake.move(-5);
 			pros::delay(200);
